@@ -6,9 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.support.v4.content.WakefulBroadcastReceiver;
-import android.util.Log;
 
 import java.util.Date;
+
+import info.nightscout.android.utils.Logger;
 
 /**
  * Created by lgoedhart on 14/07/2016.
@@ -19,17 +20,26 @@ public class MedtronicCnlAlarmReceiver extends WakefulBroadcastReceiver {
 
     private static PendingIntent pendingIntent = null;
     private static AlarmManager alarmManager = null;
+    private Logger logger;
+    private Context context;
 
     @Override
     public void onReceive(final Context context, Intent intent) {
         // Start the IntentService
-        Log.d(TAG, "Received broadcast message at " + new Date(System.currentTimeMillis()));
+
+        this.context = context;
+        logger = new Logger(TAG, context.getApplicationContext());
+        logger.d("Received broadcast message at " + new Date(System.currentTimeMillis()));
         Intent service = new Intent(context, MedtronicCnlIntentService.class);
         startWakefulService(context, service);
         restartAlarm();
     }
 
     public void setContext(Context context) {
+        this.context = context;
+
+        logger = new Logger(TAG, context.getApplicationContext());
+
         cancelAlarm();
 
         alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -46,6 +56,7 @@ public class MedtronicCnlAlarmReceiver extends WakefulBroadcastReceiver {
     public void setAlarm(long millis) {
         if (alarmManager == null || pendingIntent == null)
             return;
+        logger = new Logger(TAG, this.context.getApplicationContext());
 
         cancelAlarm();
 
@@ -53,7 +64,7 @@ public class MedtronicCnlAlarmReceiver extends WakefulBroadcastReceiver {
         if (millis < System.currentTimeMillis())
             millis = System.currentTimeMillis();
 
-        Log.d(TAG, "AlarmManager set to fire   at " + new Date(millis));
+        logger.d("AlarmManager set to fire at " + new Date(millis));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(millis, null), pendingIntent);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {

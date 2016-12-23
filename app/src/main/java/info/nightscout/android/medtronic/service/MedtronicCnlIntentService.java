@@ -13,7 +13,6 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -33,6 +32,7 @@ import info.nightscout.android.model.medtronicNg.ContourNextLinkInfo;
 import info.nightscout.android.model.medtronicNg.PumpInfo;
 import info.nightscout.android.model.medtronicNg.PumpStatusEvent;
 import info.nightscout.android.upload.nightscout.NightscoutUploadReceiver;
+import info.nightscout.android.utils.Logger;
 import info.nightscout.android.xdrip_plus.XDripPlusUploadReceiver;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -44,7 +44,10 @@ public class MedtronicCnlIntentService extends IntentService {
     public final static long POLL_PERIOD_MS = 300000L;
     // Number of additional seconds to wait after the next expected CGM poll, so that we don't interfere with CGM radio comms.
     public final static long POLL_GRACE_PERIOD_MS = 30000L;
+
     private static final String TAG = MedtronicCnlIntentService.class.getSimpleName();
+    private Logger logger;
+
     private UsbHidDriver mHidDevice;
     private Context mContext;
     private NotificationManagerCompat nm;
@@ -52,13 +55,6 @@ public class MedtronicCnlIntentService extends IntentService {
 
     public MedtronicCnlIntentService() {
         super(MedtronicCnlIntentService.class.getName());
-    }
-
-    protected void sendStatus(String message) {
-        Intent localIntent =
-                new Intent(Constants.ACTION_STATUS_MESSAGE)
-                        .putExtra(Constants.EXTENDED_DATA, message);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
 
     protected void sendMessage(String action) {
@@ -71,16 +67,18 @@ public class MedtronicCnlIntentService extends IntentService {
     public void onCreate() {
         super.onCreate();
 
-        Log.i(TAG, "onCreate called");
+        logger = new Logger(TAG, getApplicationContext());
+        logger.d("onCreate called");
         mContext = this.getBaseContext();
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        Log.d(TAG, "onDestroy called");
+        logger.d("onDestroy called");
 
         if (nm != null) {
             nm.cancelAll();
@@ -88,18 +86,17 @@ public class MedtronicCnlIntentService extends IntentService {
         }
 
         if (mHidDevice != null) {
-            Log.i(TAG, "Closing serial device...");
+            logger.d("Closing serial device...");
             mHidDevice.close();
             mHidDevice = null;
         }
     }
 
     protected void onHandleIntent(Intent intent) {
-        Log.d(TAG, "onHandleIntent called");
+        logger.d("onHandleIntent called");
 
         if (!hasUsbHostFeature()) {
-            sendStatus("It appears that this device doesn't support USB OTG.");
-            Log.e(TAG, "Device does not support USB OTG");
+            logger.e("It appears that this device doesn't support USB OTG.");
             MedtronicCnlAlarmReceiver.completeWakefulIntent(intent);
             // TODO - throw, don't return
             return;
@@ -107,8 +104,7 @@ public class MedtronicCnlIntentService extends IntentService {
 
         UsbDevice cnlStick = UsbHidDriver.getUsbDevice(mUsbManager, USB_VID, USB_PID);
         if (cnlStick == null) {
-            sendStatus("USB connection error. Is the Bayer Contour Next Link plugged in?");
-            Log.w(TAG, "USB connection error. Is the CNL plugged in?");
+            logger.e("USB connection error. Is the Bayer Contour Next Link plugged in?");
 
             // TODO - set status if offline or Nightscout not reachable
             uploadToNightscout();
@@ -128,7 +124,7 @@ public class MedtronicCnlIntentService extends IntentService {
         try {
             mHidDevice.open();
         } catch (Exception e) {
-            Log.e(TAG, "Unable to open serial device", e);
+            logger.e("Unable to open serial device", e);
             MedtronicCnlAlarmReceiver.completeWakefulIntent(intent);
             // TODO - throw, don't return
             return;
@@ -140,8 +136,7 @@ public class MedtronicCnlIntentService extends IntentService {
         realm.beginTransaction();
 
         try {
-            sendStatus("Connecting to the Contour Next Link...");
-            Log.d(TAG, "Connecting to the Contour Next Link.");
+            logger.i("Connecting to the Contour Next Link.");
             cnlReader.requestDeviceInfo();
 
             // Is the device already configured?
@@ -198,7 +193,7 @@ public class MedtronicCnlIntentService extends IntentService {
                 cnlReader.getPumpSession().setKey(MessageUtils.hexStringToByteArray(key));
 
                 long pumpMAC = cnlReader.getPumpSession().getPumpMAC();
-                Log.i(TAG, "PumpInfo MAC: " + (pumpMAC & 0xffffff));
+                logger.d("PumpInfo MAC: " + (pumpMAC & 0xffffff));
                 MainActivity.setActivePumpMac(pumpMAC);
                 PumpInfo activePump = realm
                         .where(PumpInfo.class)
@@ -212,12 +207,10 @@ public class MedtronicCnlIntentService extends IntentService {
 
                 byte radioChannel = cnlReader.negotiateChannel(activePump.getLastRadioChannel());
                 if (radioChannel == 0) {
-                    sendStatus("Could not communicate with the 640g. Are you near the pump?");
-                    Log.i(TAG, "Could not communicate with the 640g. Are you near the pump?");
+                    logger.e("Could not communicate with the 640g. Are you near the pump?");
                 } else {
                     activePump.setLastRadioChannel(radioChannel);
-                    sendStatus(String.format(Locale.getDefault(), "Connected to Contour Next Link on channel %d.", (int) radioChannel));
-                    Log.d(TAG, String.format("Connected to Contour Next Link on channel %d.", (int) radioChannel));
+                    logger.i(String.format(Locale.getDefault(), "Connected to Contour Next Link on channel %d.", (int) radioChannel));
                     cnlReader.beginEHSMSession();
 
                     PumpStatusEvent pumpRecord = realm.createObject(PumpStatusEvent.class);
@@ -230,7 +223,7 @@ public class MedtronicCnlIntentService extends IntentService {
 
                     long pumpTime = cnlReader.getPumpTime().getTime();
                     long pumpOffset = pumpTime - System.currentTimeMillis();
-                    Log.d(TAG, "Time offset between pump and device: " + pumpOffset + " millis.");
+                    logger.d("Time offset between pump and device: " + pumpOffset + " millis.");
 
                     // TODO - send ACTION to MainActivity to show offset between pump and uploader.
                     pumpRecord.setPumpTimeOffset(pumpOffset);
@@ -264,32 +257,24 @@ public class MedtronicCnlIntentService extends IntentService {
                     }
                 }
             } catch (UnexpectedMessageException e) {
-                Log.e(TAG, "Unexpected Message", e);
-                sendStatus("Communication Error: " + e.getMessage());
+                logger.e("Communication Error:", e);
             } catch (NoSuchAlgorithmException e) {
-                Log.e(TAG, "Could not determine CNL HMAC", e);
-                sendStatus("Error connecting to Contour Next Link: Hashing error.");
+                logger.e("Error connecting to Contour Next Link: Hashing error.", e);
             } finally {
-                //TODO : 05.11.2016 has the close to be here?
                 cnlReader.closeConnection();
                 cnlReader.endPassthroughMode();
                 cnlReader.endControlMode();
             }
         } catch (IOException e) {
-            Log.e(TAG, "Error connecting to Contour Next Link.", e);
-            sendStatus("Error connecting to Contour Next Link.");
+            logger.e("Error connecting to Contour Next Link.", e);
         } catch (ChecksumException e) {
-            Log.e(TAG, "Checksum error getting message from the Contour Next Link.", e);
-            sendStatus("Checksum error getting message from the Contour Next Link.");
+            logger.e("Checksum error getting message from the Contour Next Link.", e);
         } catch (EncryptionException e) {
-            Log.e(TAG, "Error decrypting messages from Contour Next Link.", e);
-            sendStatus("Error decrypting messages from Contour Next Link.");
+            logger.e("Error decrypting messages from Contour Next Link.", e);
         } catch (TimeoutException e) {
-            Log.e(TAG, "Timeout communicating with the Contour Next Link.", e);
-            sendStatus("Timeout communicating with the Contour Next Link.");
+            logger.e("Timeout communicating with the Contour Next Link.", e);
         } catch (UnexpectedMessageException e) {
-            Log.e(TAG, "Could not close connection.", e);
-            sendStatus("Could not close connection: " + e.getMessage());
+            logger.e("Could not close connection.", e);
         } finally {
             if (!realm.isClosed()) {
                 if (realm.isInTransaction()) {
@@ -323,7 +308,7 @@ public class MedtronicCnlIntentService extends IntentService {
             final Intent receiverIntent = new Intent(this, XDripPlusUploadReceiver.class);
             final long timestamp = System.currentTimeMillis() + 500L;
             final PendingIntent pendingIntent = PendingIntent.getBroadcast(this, (int) timestamp, receiverIntent, PendingIntent.FLAG_ONE_SHOT);
-            Log.d(TAG, "Scheduling xDrip+ send");
+            logger.d("Scheduling xDrip+ send");
             wakeUpIntent(getApplicationContext(), timestamp, pendingIntent);
         }
     }

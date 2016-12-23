@@ -8,10 +8,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -35,6 +32,7 @@ import info.nightscout.android.R;
 import info.nightscout.android.medtronic.MainActivity;
 import info.nightscout.android.model.medtronicNg.PumpStatusEvent;
 import info.nightscout.android.upload.nightscout.serializer.EntriesSerializer;
+import info.nightscout.android.utils.Logger;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -46,6 +44,8 @@ public class NightscoutUploadIntentService extends IntentService {
     private static final int CONNECTION_TIMEOUT = 30 * 1000;
     Context mContext;
     private Realm mRealm;
+    private Logger logger;
+
 
     public NightscoutUploadIntentService() {
         super(NightscoutUploadIntentService.class.getName());
@@ -62,13 +62,14 @@ public class NightscoutUploadIntentService extends IntentService {
     public void onCreate() {
         super.onCreate();
 
-        Log.i(TAG, "onCreate called");
+        logger = new Logger(TAG, getApplicationContext());
+        logger.d("onCreate called");
         mContext = this.getBaseContext();
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Log.d(TAG, "onHandleIntent called");
+        logger.d("onHandleIntent called");
         mRealm = Realm.getDefaultInstance();
 
         RealmResults<PumpStatusEvent> records = mRealm
@@ -84,15 +85,15 @@ public class NightscoutUploadIntentService extends IntentService {
             try {
                 if (enableRESTUpload) {
                     long start = System.currentTimeMillis();
-                    Log.i(TAG, String.format("Starting upload of %s record using a REST API", records.size()));
+                    logger.i(String.format("Starting upload of %s record using a REST API", records.size()));
                     doRESTUpload(prefs, records);
-                    Log.i(TAG, String.format("Finished upload of %s record using a REST API in %s ms", records.size(), System.currentTimeMillis() - start));
+                    logger.i(String.format("Finished upload of %s record using a REST API in %s ms", records.size(), System.currentTimeMillis() - start));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "ERROR uploading data!!!!!", e);
+                logger.e("ERROR uploading data!!!!!", e);
             }
         } else {
-            Log.i(TAG, "No records has to be uploaded");
+            logger.i("No records has to be uploaded");
         }
 
         NightscoutUploadReceiver.completeWakefulIntent(intent);
@@ -132,7 +133,7 @@ public class NightscoutUploadIntentService extends IntentService {
         try {
             doRESTUploadTo(uploadUrl, records);
         } catch (Exception e) {
-            Log.e(TAG, "Unable to do REST API Upload to: " + uploadUrl, e);
+            logger.e("Unable to do REST API Upload to: " + uploadUrl, e);
         }
     }
 
@@ -188,7 +189,7 @@ public class NightscoutUploadIntentService extends IntentService {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Unable to post data", e);
+            logger.e("Unable to post data", e);
         }
     }
 
@@ -201,7 +202,7 @@ public class NightscoutUploadIntentService extends IntentService {
     }
 
     private boolean uploadToNightscout(URL endpoint, String secret, String httpBody) throws Exception {
-        Log.i(TAG, "postURL: " + endpoint.toString());
+        logger.d("postURL: " + endpoint.toString());
 
         HttpPost post = new HttpPost(endpoint.toString());
 
@@ -226,7 +227,7 @@ public class NightscoutUploadIntentService extends IntentService {
 
         DefaultHttpClient httpclient = new DefaultHttpClient(params);
 
-        Log.i(TAG, "Upload JSON: " + httpBody);
+        logger.d("Upload JSON: " + httpBody);
 
         try {
             StringEntity se = new StringEntity(httpBody);
@@ -237,7 +238,7 @@ public class NightscoutUploadIntentService extends IntentService {
             ResponseHandler responseHandler = new BasicResponseHandler();
             httpclient.execute(post, responseHandler);
         } catch (Exception e) {
-            Log.w(TAG, "Unable to post data to: '" + post.getURI().toString() + "'", e);
+            logger.e("Unable to post data to: '" + post.getURI().toString() + "'", e);
             return false;
         }
 
@@ -276,7 +277,7 @@ public class NightscoutUploadIntentService extends IntentService {
 
         json.put("pump", pumpInfo);
         String jsonString = json.toString();
-        Log.i(TAG, "Device Status JSON: " + jsonString);
+        logger.d("Device Status JSON: " + jsonString);
 
         devicestatusArray.put(json);
     }
