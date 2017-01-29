@@ -231,6 +231,8 @@ public class MedtronicCnlIntentService extends IntentService {
                     pumpRecord.setPumpDate(new Date(pumpTime - pumpOffset));
                     cnlReader.updatePumpStatus(pumpRecord);
 
+                    cnlReader.getHistory(new Date(), new Date());
+
                     cnlReader.endEHSMSession();
 
                     if (pumpRecord.getSgv() != 0) {
@@ -245,9 +247,6 @@ public class MedtronicCnlIntentService extends IntentService {
                         if (checkExistingRecords.size() == 0) {
                             activePump.getPumpHistory().add(pumpRecord);
                         }
-
-                        Log.d(TAG, "history reading size: " + activePump.getPumpHistory().size());
-                        Log.d(TAG, "history reading date: " + activePump.getPumpHistory().last().getEventDate());
                     }
 
                     realm.commitTransaction();

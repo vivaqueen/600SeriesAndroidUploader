@@ -4,12 +4,14 @@ import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Date;
 
 import info.nightscout.android.BuildConfig;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
 import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.model.medtronicNg.PumpStatusEvent;
 import info.nightscout.android.utils.HexDump;
 
 /**
@@ -17,11 +19,15 @@ import info.nightscout.android.utils.HexDump;
  */
 public class ReadHistoryInfoResponseMessage extends MedtronicSendMessageResponseMessage {
     private static final String TAG = ReadHistoryInfoResponseMessage.class.getSimpleName();
+    private long historySize = 0;
+    private Date startDate;
+    private Date endDate;
 
     protected ReadHistoryInfoResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, UnexpectedMessageException {
         super(pumpSession, payload);
 
 
+        long rtc, offset;
         if (this.encode().length < 32) {
             // Invalid message.
             // TODO - deal with this more elegantly
@@ -29,20 +35,31 @@ public class ReadHistoryInfoResponseMessage extends MedtronicSendMessageResponse
             throw new UnexpectedMessageException("Invalid message received for ReadHistoryInfo");
         } else {
 
-            ByteBuffer basalRatesBuffer = ByteBuffer.allocate(payload.length);
-            basalRatesBuffer.order(ByteOrder.BIG_ENDIAN);
-            basalRatesBuffer.put(this.encode());
+            ByteBuffer readHistoryInfoBuffer = ByteBuffer.allocate(payload.length);
+            readHistoryInfoBuffer.order(ByteOrder.BIG_ENDIAN);
+            readHistoryInfoBuffer.put(this.encode());
 
-            if (BuildConfig.DEBUG) {
-                String outputString = HexDump.dumpHexString(basalRatesBuffer.array());
-                Log.d(TAG, "PAYLOAD: " + outputString);
-            }
-            String responseString = HexDump.dumpHexString(basalRatesBuffer.array());
-            Log.d(TAG, "ReadHistoryInfo: " + responseString);
-            Log.d(TAG, "ReadHistoryInfo-length: " + basalRatesBuffer.getLong(28));
+            this.historySize = (readHistoryInfoBuffer.getLong(0x04) & 0x00000000ffffffffL);
+            
+            rtc = readHistoryInfoBuffer.getInt(0x08) & 0x00000000ffffffffL;
+            offset = readHistoryInfoBuffer.getInt(0x0c) - 0x100000000L;
+            startDate = MessageUtils.decodeDateTime(rtc, offset);
+
+            rtc = readHistoryInfoBuffer.getInt(0x10) & 0x00000000ffffffffL;
+            offset = readHistoryInfoBuffer.getInt(0x14) - 0x100000000L;
+            endDate = MessageUtils.decodeDateTime(rtc, offset);
         }
-
-
     }
 
+    public long getHistorySize() {
+        return historySize;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
 }

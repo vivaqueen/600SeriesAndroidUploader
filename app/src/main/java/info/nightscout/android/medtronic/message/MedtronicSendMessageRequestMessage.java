@@ -23,6 +23,10 @@ public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRe
         TIME_REQUEST(0x0403),
         READ_PUMP_STATUS_REQUEST(0x0112),
         READ_BASAL_PATTERN_REQUEST(0x0116),
+        READ_HISTORY_INFO_REQUEST(0x030C),
+        READ_HISTORY_INFO_RESPONSE(0x030D),
+        READ_HISTORY_REQUEST(0x0304),
+        READ_HISTORY_RESPONSE(0x0305),
         END_EHSM_SESSION(0x412);
 
         private short value;

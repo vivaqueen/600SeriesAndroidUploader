@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
 import info.nightscout.android.USB.UsbHidDriver;
@@ -34,6 +33,7 @@ import info.nightscout.android.medtronic.message.ReadHistoryInfoRequestMessage;
 import info.nightscout.android.medtronic.message.ReadHistoryInfoResponseMessage;
 import info.nightscout.android.medtronic.message.ReadInfoRequestMessage;
 import info.nightscout.android.medtronic.message.ReadInfoResponseMessage;
+import info.nightscout.android.medtronic.message.ReadPumpHistoryInfoRequestMessage;
 import info.nightscout.android.medtronic.message.RequestLinkKeyRequestMessage;
 import info.nightscout.android.medtronic.message.RequestLinkKeyResponseMessage;
 import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
@@ -198,11 +198,12 @@ public class MedtronicCnlReader {
     }
 
 
-    public void getHistory() throws EncryptionException, IOException, ChecksumException, TimeoutException, UnexpectedMessageException {
+    public void getHistory(Date from, Date to) throws EncryptionException, IOException, ChecksumException, TimeoutException, UnexpectedMessageException {
         Log.d(TAG, "Begin getHistory");
         // FIXME - throw if not in EHSM mode (add a state machine)
 
-        ReadHistoryInfoResponseMessage response = new ReadHistoryInfoRequestMessage(mPumpSession).send(mDevice);
+        ReadHistoryInfoResponseMessage response = new ReadPumpHistoryInfoRequestMessage(mPumpSession, from, to).send(mDevice);
+        Log.d(TAG, "number of pump history entries: " + response.getHistorySize() );
 
         Log.d(TAG, "Finished getHistory");
     }
