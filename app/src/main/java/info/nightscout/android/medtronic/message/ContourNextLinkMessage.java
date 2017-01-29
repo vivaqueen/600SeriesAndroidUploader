@@ -8,9 +8,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import info.nightscout.android.USB.UsbHidDriver;
-import info.nightscout.android.medtronic.exception.ChecksumException;
-import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
 import info.nightscout.android.utils.HexDump;
 
 /**
@@ -27,6 +24,7 @@ public abstract class ContourNextLinkMessage {
 
     public enum CommandAction {
         NO_TYPE(0x0),
+
         CHANNEL_NEGOTIATE(0x03),
         PUMP_REQUEST(0x05),
         PUMP_RESPONSE(0x55);
@@ -40,9 +38,16 @@ public abstract class ContourNextLinkMessage {
         public byte getValue() {
             return value;
         }
-
         public boolean equals(byte value) {
             return this.value == value;
+        }
+
+        public static CommandAction getCommandAction(byte value) {
+            for(CommandAction item : CommandAction.values()) {
+                if (item.value == value)
+                    return item;
+            }
+            return NO_TYPE;
         }
     }
 
@@ -68,11 +73,80 @@ public abstract class ContourNextLinkMessage {
         public byte getValue() {
             return value;
         }
-
         public boolean equals(byte value) {
             return this.value == value;
         }
+
+        public static CommandType getCommandType(short value) {
+            for(CommandType item : CommandType.values()) {
+                if (item.value == value)
+                    return item;
+            }
+            return NO_TYPE;
+        }
     }
+
+    public enum MessageCommand {
+        HIGH_SPEED_MODE_COMMAND(0x0412),
+
+        TIME_REQUEST(0x0403),
+        TIME_RESPONSE(0x0407),
+
+        READ_PUMP_STATUS_REQUEST(0x0112),
+        READ_PUMP_STATUS_RESPONSE(0x013C),
+
+        READ_BASAL_PATTERN_REQUEST(0x0116),
+        READ_BASAL_PATTERN_RESPONSE(0x0123),
+
+        READ_BOLUS_WIZARD_BG_TARGETS_REQUEST(0x0131),
+        READ_BOLUS_WIZARD_BG_TARGETS_RESPONSE(0x0132),
+        READ_BOLUS_WIZARD_CARB_RATIOS_REQUEST(0x012B),
+        READ_BOLUS_WIZARD_CARB_RATIOS_RESPONSE(0x012C),
+        READ_BOLUS_WIZARD_SENSITIVITY_FACTORS_REQUEST(0x012E),
+        READ_BOLUS_WIZARD_SENSITIVITY_FACTORS_RESPONSE(0x012F),
+
+        READ_HISTORY_INFO_REQUEST(0x030C),
+        READ_HISTORY_INFO_RESPONSE(0x030D),
+        READ_HISTORY_REQUEST(0x0304),
+        READ_HISTORY_RESPONSE(0x0305),
+        END_HISTORY_TRANSMISSION(0x030A),
+
+        DEVICE_CHARACTERISTICS_REQUEST(0x0200),
+        DEVICE_CHARACTERISTICS_RESPONSE(0x0201),
+
+        DEVICE_STRING_REQUEST(0x013A),
+        DEVICE_STRING_RESPONSE(0x013B),
+
+        INITIATE_MULTIPACKET_TRANSFER(0xFF00),
+        MULTIPACKET_SEGMENT_TRANSMISSION(0xFF01),
+        ACK_MULTIPACKET_COMMAND(0x00FE),
+
+        READ_TRACE_HISTORY_MESSAGE(0x0302),
+
+        NO_TYPE(0x0);
+
+        protected short value;
+
+        MessageCommand(int messageType) {
+            value = (short) messageType;
+        }
+
+        public short getValue() {
+            return value;
+        }
+        public boolean equals(short value) {
+            return this.value == value;
+        }
+
+        public static MessageCommand getMessageCommand(short value) {
+            for(MessageCommand item : MessageCommand.values()) {
+                if (item.value == value)
+                    return item;
+            }
+            return NO_TYPE;
+        }
+    }
+
 
     protected ContourNextLinkMessage(byte[] bytes) {
         setPayload(bytes);
@@ -147,7 +221,9 @@ public abstract class ContourNextLinkMessage {
         EOT(0x04),
         ENQ(0x05),
         ACK(0x06),
-        NAK(0x15);
+        NAK(0x15),
+
+        NO_TYPE(0x0);
 
         protected byte value;
 
@@ -158,9 +234,17 @@ public abstract class ContourNextLinkMessage {
         public byte getValue() {
             return value;
         }
-
         public boolean equals(byte value) {
             return this.value == value;
+        }
+
+
+        public static ASCII getASCII(short value) {
+            for(ASCII item : ASCII.values()) {
+                if (item.value == value)
+                    return item;
+            }
+            return NO_TYPE;
         }
     }
 }
