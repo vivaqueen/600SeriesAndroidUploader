@@ -12,30 +12,29 @@ import java.util.Date;
 import java.util.concurrent.TimeoutException;
 
 import info.nightscout.android.USB.UsbHidDriver;
-import info.nightscout.android.medtronic.message.BeginEHSMMessage;
-import info.nightscout.android.medtronic.message.ChannelNegotiateRequestMessage;
-import info.nightscout.android.medtronic.message.ChannelNegotiateResponseMessage;
+import info.nightscout.android.medtronic.message.pump.command.BeginEHSMMessage;
+import info.nightscout.android.medtronic.message.pump.ChannelNegotiateRequestMessage;
+import info.nightscout.android.medtronic.message.pump.ChannelNegotiateResponseMessage;
 import info.nightscout.android.medtronic.exception.ChecksumException;
-import info.nightscout.android.medtronic.message.CloseConnectionRequestMessage;
-import info.nightscout.android.medtronic.message.ContourNextLinkCommandMessage;
+import info.nightscout.android.medtronic.message.contourlink.CloseConnectionRequestMessage;
+import info.nightscout.android.medtronic.message.AbstractCommandMessage;
 import info.nightscout.android.medtronic.message.DeviceInfoRequestCommandMessage;
 import info.nightscout.android.medtronic.message.DeviceInfoResponseCommandMessage;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.message.EndEHSMMessage;
-import info.nightscout.android.medtronic.message.OpenConnectionRequestMessage;
-import info.nightscout.android.medtronic.message.PumpBasalPatternRequestMessage;
-import info.nightscout.android.medtronic.message.PumpBasalPatternResponseMessage;
-import info.nightscout.android.medtronic.message.PumpStatusRequestMessage;
-import info.nightscout.android.medtronic.message.PumpStatusResponseMessage;
-import info.nightscout.android.medtronic.message.PumpTimeRequestMessage;
-import info.nightscout.android.medtronic.message.PumpTimeResponseMessage;
-import info.nightscout.android.medtronic.message.ReadHistoryInfoRequestMessage;
-import info.nightscout.android.medtronic.message.ReadHistoryInfoResponseMessage;
-import info.nightscout.android.medtronic.message.ReadInfoRequestMessage;
-import info.nightscout.android.medtronic.message.ReadInfoResponseMessage;
-import info.nightscout.android.medtronic.message.ReadPumpHistoryInfoRequestMessage;
-import info.nightscout.android.medtronic.message.RequestLinkKeyRequestMessage;
-import info.nightscout.android.medtronic.message.RequestLinkKeyResponseMessage;
+import info.nightscout.android.medtronic.message.pump.command.EndEHSMMessage;
+import info.nightscout.android.medtronic.message.contourlink.OpenConnectionRequestMessage;
+import info.nightscout.android.medtronic.message.pump.PumpBasalPatternRequestMessage;
+import info.nightscout.android.medtronic.message.pump.PumpBasalPatternResponseMessage;
+import info.nightscout.android.medtronic.message.pump.PumpStatusRequestMessage;
+import info.nightscout.android.medtronic.message.pump.PumpStatusResponseMessage;
+import info.nightscout.android.medtronic.message.pump.PumpTimeRequestMessage;
+import info.nightscout.android.medtronic.message.pump.PumpTimeResponseMessage;
+import info.nightscout.android.medtronic.message.pump.ReadHistoryInfoResponseMessage;
+import info.nightscout.android.medtronic.message.contourlink.ReadInfoRequestMessage;
+import info.nightscout.android.medtronic.message.contourlink.ReadInfoResponseMessage;
+import info.nightscout.android.medtronic.message.pump.ReadPumpHistoryInfoRequestMessage;
+import info.nightscout.android.medtronic.message.pump.RequestLinkKeyRequestMessage;
+import info.nightscout.android.medtronic.message.pump.RequestLinkKeyResponseMessage;
 import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
 import info.nightscout.android.model.medtronicNg.PumpStatusEvent;
 
@@ -77,13 +76,13 @@ public class MedtronicCnlReader {
         do {
             doRetry = false;
             try {
-                new ContourNextLinkCommandMessage(ContourNextLinkCommandMessage.ASCII.NAK)
-                        .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.EOT);
-                new ContourNextLinkCommandMessage(ContourNextLinkCommandMessage.ASCII.ENQ)
-                        .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
+                new AbstractCommandMessage(AbstractCommandMessage.ASCII.NAK)
+                        .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.EOT);
+                new AbstractCommandMessage(AbstractCommandMessage.ASCII.ENQ)
+                        .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
             } catch (UnexpectedMessageException e2) {
                 try {
-                    new ContourNextLinkCommandMessage(ContourNextLinkCommandMessage.ASCII.EOT).send(mDevice);
+                    new AbstractCommandMessage(AbstractCommandMessage.ASCII.EOT).send(mDevice);
                 } catch (IOException e) {}
                 finally {
                     doRetry = true;
@@ -94,12 +93,12 @@ public class MedtronicCnlReader {
 
     public void enterPassthroughMode() throws IOException, TimeoutException, UnexpectedMessageException, ChecksumException, EncryptionException {
         Log.d(TAG, "Begin enterPasshtroughMode");
-        new ContourNextLinkCommandMessage("W|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
-        new ContourNextLinkCommandMessage("Q|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
-        new ContourNextLinkCommandMessage("1|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("W|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("Q|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("1|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
         Log.d(TAG, "Finished enterPasshtroughMode");
     }
 
@@ -222,19 +221,19 @@ public class MedtronicCnlReader {
 
     public void endPassthroughMode() throws IOException, TimeoutException, UnexpectedMessageException, ChecksumException, EncryptionException {
         Log.d(TAG, "Begin endPassthroughMode");
-        new ContourNextLinkCommandMessage("W|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
-        new ContourNextLinkCommandMessage("Q|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
-        new ContourNextLinkCommandMessage("0|")
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("W|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("Q|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
+        new AbstractCommandMessage("0|")
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ACK);
         Log.d(TAG, "Finished endPassthroughMode");
     }
 
     public void endControlMode() throws IOException, TimeoutException, UnexpectedMessageException, ChecksumException, EncryptionException {
         Log.d(TAG, "Begin endControlMode");
-        new ContourNextLinkCommandMessage(ContourNextLinkCommandMessage.ASCII.EOT)
-                .send(mDevice, 500).checkControlMessage(ContourNextLinkCommandMessage.ASCII.ENQ);
+        new AbstractCommandMessage(AbstractCommandMessage.ASCII.EOT)
+                .send(mDevice, 500).checkControlMessage(AbstractCommandMessage.ASCII.ENQ);
         Log.d(TAG, "Finished endControlMode");
     }
 }

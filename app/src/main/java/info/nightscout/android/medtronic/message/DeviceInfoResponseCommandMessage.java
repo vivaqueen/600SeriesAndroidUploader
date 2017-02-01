@@ -12,7 +12,7 @@ import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
 /**
  * Created by lgoedhart on 10/05/2016.
  */
-public class DeviceInfoResponseCommandMessage extends ContourNextLinkResponseMessage {
+public class DeviceInfoResponseCommandMessage extends AbstractResponseMessage {
     private String serial = "";
     private final Pattern pattern = Pattern.compile(".*?\\^(\\d{4}-\\d{7})\\^.*");
 

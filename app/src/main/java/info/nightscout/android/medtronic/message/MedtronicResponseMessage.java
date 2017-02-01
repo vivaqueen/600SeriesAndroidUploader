@@ -17,7 +17,7 @@ import info.nightscout.android.utils.HexDump;
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public class MedtronicResponseMessage extends ContourNextLinkResponseMessage {
+public class MedtronicResponseMessage extends AbstractResponseMessage {
     private static final String TAG = MedtronicResponseMessage.class.getSimpleName();
 
     static int ENVELOPE_SIZE = 22;
@@ -79,12 +79,12 @@ public class MedtronicResponseMessage extends ContourNextLinkResponseMessage {
      * | byte receiveSequenceNumber | BE short receiveMessageType | byte[] Payload bytes | BE short CCITT CRC |
      * +----------------------------+-----------------------------+----------------------+--------------------+
      */
-    public static ContourNextLinkMessage fromBytes(MedtronicCnlSession pumpSession, byte[] bytes) throws ChecksumException, EncryptionException {
+    public static AbstractBaseMessage fromBytes(MedtronicCnlSession pumpSession, byte[] bytes) throws ChecksumException, EncryptionException {
         // TODO - turn this into a factory
 
         return new MedtronicResponseMessage(pumpSession, bytes);
         /*
-        ContourNextLinkMessage message = MedtronicMessage.fromBytes(bytes);
+        AbstractBaseMessage message = MedtronicMessage.fromBytes(bytes);
 
 
         // TODO - Validate the message, inner CCITT, serial numbers, etc

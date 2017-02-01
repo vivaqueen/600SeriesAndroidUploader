@@ -12,7 +12,7 @@ import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
  * Created by volker on 10.12.2016.
  */
 
-public class DeviceInfoRequestCommandMessage extends ContourNextLinkRequestMessage<DeviceInfoResponseCommandMessage> {
+public class DeviceInfoRequestCommandMessage extends AbstractRequestMessage<DeviceInfoResponseCommandMessage> {
     public DeviceInfoRequestCommandMessage() {
         super("X".getBytes());
     }
@@ -20,20 +20,10 @@ public class DeviceInfoRequestCommandMessage extends ContourNextLinkRequestMessa
     @Override
     public DeviceInfoResponseCommandMessage send(UsbHidDriver mDevice, int millis) throws IOException, TimeoutException, EncryptionException, ChecksumException, UnexpectedMessageException {
         sendMessage(mDevice);
+        sleep(millis);
 
-        if (millis > 0) {
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-            }
-        }
         byte[] response1 = readMessage(mDevice);
-        if (millis > 0) {
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-            }
-        }
+        sleep(millis);
         byte[] response2 = readMessage(mDevice);
 
         boolean doRetry = false;

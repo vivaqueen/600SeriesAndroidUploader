@@ -1,0 +1,40 @@
+package info.nightscout.android.medtronic.message.pump;
+
+import android.util.Log;
+
+import java.io.IOException;
+import java.util.Locale;
+
+import info.nightscout.android.medtronic.MedtronicCnlSession;
+import info.nightscout.android.medtronic.exception.ChecksumException;
+import info.nightscout.android.medtronic.exception.EncryptionException;
+import info.nightscout.android.medtronic.message.AbstractBinaryResponseMessage;
+
+/**
+ * Created by lgoedhart on 27/03/2016.
+ */
+public class ChannelNegotiateResponseMessage extends AbstractBinaryResponseMessage {
+    private static final String TAG = ChannelNegotiateResponseMessage.class.getSimpleName();
+
+    private byte radioChannel = 0;
+
+    protected ChannelNegotiateResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, IOException {
+        super(payload);
+
+        byte[] responseBytes = this.encode();
+
+        Log.d(TAG, "negotiateChannel: Check response length");
+        if (responseBytes.length > 46) {
+            radioChannel = responseBytes[76];
+            if (responseBytes[76] != pumpSession.getRadioChannel()) {
+                throw new IOException(String.format(Locale.getDefault(), "Expected to get a message for channel %d. Got %d", pumpSession.getRadioChannel(), responseBytes[76]));
+            }
+        } else {
+            radioChannel = ((byte) 0);
+        }
+    }
+
+    public byte getRadioChannel() {
+        return radioChannel;
+    }
+}
