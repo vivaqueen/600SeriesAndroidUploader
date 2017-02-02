@@ -4,17 +4,15 @@ import java.io.IOException;
 import java.util.Date;
 
 import info.nightscout.android.medtronic.MedtronicCnlSession;
-
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
-import info.nightscout.android.medtronic.message.AbstractBaseMessage.MessageCommand;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 
 /**
  * Created by volker on 29.01.2017.
  */
 
-    public abstract class ReadHistoryRequestMessage<T> extends ReadHistoryBaseRequestMessage<T> {
+    public abstract class ReadHistoryRequestMessage extends ReadHistoryBaseRequestMessage<ReadHistoryResponseMessage> {
         private static final String TAG = ReadHistoryRequestMessage.class.getSimpleName();
         private boolean receviedEndHistoryCommand;
         private int bytesFetched;
@@ -28,13 +26,12 @@ import info.nightscout.android.medtronic.message.AbstractBaseMessage.MessageComm
             this.receviedEndHistoryCommand = false;
         }
 
-        @Override
-        protected ReadHistoryResponseMessage getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException, EncryptionException, ChecksumException, UnexpectedMessageException {
-            return new ReadHistoryResponseMessage(mPumpSession, payload);
-        }
+    @Override
+    protected ReadHistoryResponseMessage getResponse(byte[] payload) throws IOException, EncryptionException, ChecksumException, InvalidMessageException {
+        return new ReadHistoryResponseMessage(mPumpSession, payload);
+    }
 
-
-        protected boolean fetchMoreData() {
+    protected boolean fetchMoreData() {
             return !this.receviedEndHistoryCommand;
         }
     /*

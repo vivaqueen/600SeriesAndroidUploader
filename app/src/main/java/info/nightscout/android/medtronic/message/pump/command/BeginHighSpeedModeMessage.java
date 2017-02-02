@@ -7,8 +7,8 @@ import info.nightscout.android.medtronic.exception.EncryptionException;
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public class BeginEHSMMessage extends EHSMMessage {
-    public BeginEHSMMessage(MedtronicCnlSession pumpSession) throws EncryptionException, ChecksumException {
+public class BeginHighSpeedModeMessage extends HighSpeedModeMessage {
+    public BeginHighSpeedModeMessage(MedtronicCnlSession pumpSession) throws EncryptionException, ChecksumException {
         super(MessageCommand.HIGH_SPEED_MODE_COMMAND, pumpSession, buildPayload());
     }
 

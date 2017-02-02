@@ -1,16 +1,15 @@
 package info.nightscout.android.medtronic.message.pump;
 
-import info.nightscout.android.medtronic.MedtronicCnlSession;
-import info.nightscout.android.medtronic.exception.ChecksumException;
-import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
-import info.nightscout.android.medtronic.message.AbstractResponseMessage;
-import info.nightscout.android.medtronic.message.MedtronicRequestMessage;
-import info.nightscout.android.medtronic.message.MessageUtils;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import info.nightscout.android.medtronic.MedtronicCnlSession;
+import info.nightscout.android.medtronic.exception.ChecksumException;
+import info.nightscout.android.medtronic.exception.EncryptionException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
+import info.nightscout.android.medtronic.message.MedtronicRequestMessage;
+import info.nightscout.android.medtronic.message.MessageUtils;
 /**
  * Created by volker on 18.12.2016.
  */
@@ -26,7 +25,7 @@ public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRe
     }
 
     @Override
-    protected AbstractResponseMessage getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException {
+    protected T getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, InvalidMessageException, EncryptionException, ChecksumException, InvalidMessageException {
         return null;
     }
 

@@ -54,6 +54,8 @@ public class MedtronicResponseMessage extends AbstractResponseMessage {
                 String outputString = HexDump.dumpHexString(this.mPayload.array());
                 Log.d(TAG, "DECRYPTED: " + outputString);
             }
+
+            //this.comDCommand = MessageCommand.getMessageCommand((short) (buffer.getShort(0x01) & 0x0000ffff));
         }
     }
 

@@ -6,7 +6,7 @@ import java.nio.ByteOrder;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 import info.nightscout.android.medtronic.message.pump.MedtronicSendMessageResponseMessage;
 
 /**
@@ -18,9 +18,9 @@ public class MultiPacketSegmentResponseMessage extends MedtronicSendMessageRespo
     private static final String TAG = MultiPacketSegmentResponseMessage.class.getSimpleName();
     private final int packetNumber;
 
-    private final MessageCommand comDCommand;
+    private MessageCommand comDCommand;
 
-    public MultiPacketSegmentResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, UnexpectedMessageException {
+    public MultiPacketSegmentResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException {
         super(pumpSession, payload);
 
         byte[] encoded = this.encode();
@@ -30,10 +30,9 @@ public class MultiPacketSegmentResponseMessage extends MedtronicSendMessageRespo
 
         this.packetNumber = buffer.getShort(0x03) & 0x0000ffff;
 
-        this.comDCommand = MessageCommand.getMessageCommand((short) (buffer.getShort(0x01) & 0x0000ffff));
-
         // pick segment payload
         setPayload(encoded);
+        comDCommand = null;
     }
 
     public int getPacketNumber() {

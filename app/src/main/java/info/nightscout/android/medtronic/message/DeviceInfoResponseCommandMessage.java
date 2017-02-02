@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 
 /**
  * Created by lgoedhart on 10/05/2016.
@@ -17,7 +17,7 @@ public class DeviceInfoResponseCommandMessage extends AbstractResponseMessage {
     private final Pattern pattern = Pattern.compile(".*?\\^(\\d{4}-\\d{7})\\^.*");
 
     protected DeviceInfoResponseCommandMessage(byte[] payload)
-            throws ChecksumException, EncryptionException, TimeoutException, UnexpectedMessageException, IOException {
+            throws ChecksumException, EncryptionException, TimeoutException, InvalidMessageException, IOException {
         super(payload);
 
         extractStickSerial(new String(payload));

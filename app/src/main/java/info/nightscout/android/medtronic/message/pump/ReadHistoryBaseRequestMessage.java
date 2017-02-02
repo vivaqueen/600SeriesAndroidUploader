@@ -10,19 +10,15 @@ import info.nightscout.android.USB.UsbHidDriver;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
-
-import info.nightscout.android.medtronic.message.pump.command.multipacket.MultiPacketSegmentResponseMessage;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
+import info.nightscout.android.medtronic.message.AbstractResponseMessage;
 import info.nightscout.android.medtronic.message.pump.command.multipacket.InitiateTransferCommand;
-
-import static info.nightscout.android.medtronic.message.AbstractBaseMessage.MessageCommand.HIGH_SPEED_MODE_COMMAND;
-import static info.nightscout.android.medtronic.message.AbstractBaseMessage.MessageCommand.INITIATE_MULTIPACKET_TRANSFER;
-import static info.nightscout.android.medtronic.message.AbstractBaseMessage.MessageCommand.MULTIPACKET_SEGMENT_TRANSMISSION;
+import info.nightscout.android.medtronic.message.pump.command.multipacket.MultiPacketSegmentResponseMessage;
 
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public abstract class ReadHistoryBaseRequestMessage<T> extends MedtronicSendMessageRequestMessage<T> {
+public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMessage> extends MedtronicSendMessageRequestMessage<T> {
 
     protected enum HistoryDataType {
         PUMP_DATA(0x2),
@@ -49,12 +45,7 @@ public abstract class ReadHistoryBaseRequestMessage<T> extends MedtronicSendMess
     }
 
     @Override
-    protected ReadHistoryResponseMessage getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException {
-        return new ReadHistoryResponseMessage(mPumpSession, payload);
-    }
-
-    @Override
-    public T send(UsbHidDriver mDevice, int sendDelay) throws UnexpectedMessageException, EncryptionException, TimeoutException, ChecksumException, IOException {
+    public T send(UsbHidDriver mDevice, int sendDelay) throws TimeoutException, EncryptionException, ChecksumException, InvalidMessageException, IOException {
         sendMessage(mDevice);
         sleep(sendDelay);
 
@@ -62,7 +53,6 @@ public abstract class ReadHistoryBaseRequestMessage<T> extends MedtronicSendMess
             MultiPacketSegmentResponseMessage multiPacketSegmentResponseMessage = new MultiPacketSegmentResponseMessage(mPumpSession, readMessage(mDevice));
             switch (multiPacketSegmentResponseMessage.getComDCommand()) {
                 case HIGH_SPEED_MODE_COMMAND:
-                    //callback(null, null);
                     break;
                 case INITIATE_MULTIPACKET_TRANSFER:
                     //this.initSession(response.decryptedPayload);
@@ -76,7 +66,7 @@ public abstract class ReadHistoryBaseRequestMessage<T> extends MedtronicSendMess
 
                     // Check that we received as much data as we were expecting.
                     if (this.bytesFetched < this.expectedSize) {
-                        //callback(new InvalidMessageError('Got less data than expected'), null);
+                        throw new InvalidMessageException("Got less data than expected");
                     } else {
                         // We need to read another HIGH_SPEED_MODE_COMMAND off the stack.
                         this.readMessage(mDevice);

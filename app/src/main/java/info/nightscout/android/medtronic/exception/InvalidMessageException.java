@@ -3,8 +3,8 @@ package info.nightscout.android.medtronic.exception;
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public class UnexpectedMessageException extends Throwable {
-    public UnexpectedMessageException(String message) {
+public class InvalidMessageException extends Throwable {
+    public InvalidMessageException(String message) {
         super(message);
     }
 }

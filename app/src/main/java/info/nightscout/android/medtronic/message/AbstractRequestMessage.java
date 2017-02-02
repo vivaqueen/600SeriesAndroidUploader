@@ -1,15 +1,12 @@
 package info.nightscout.android.medtronic.message;
 
-
-import android.util.Log;
-
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import info.nightscout.android.USB.UsbHidDriver;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 
 /**
  * Created by volker on 12.12.2016.
@@ -22,11 +19,11 @@ public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
         super(bytes);
     }
 
-    public T send(UsbHidDriver mDevice) throws IOException, TimeoutException, EncryptionException, ChecksumException, UnexpectedMessageException {
+    public T send(UsbHidDriver mDevice) throws IOException, TimeoutException, EncryptionException, ChecksumException, InvalidMessageException {
         return send(mDevice, 0);
     }
 
-    public T send(UsbHidDriver mDevice, int millis) throws UnexpectedMessageException, EncryptionException, TimeoutException, ChecksumException, IOException {
+    public T send(UsbHidDriver mDevice, int millis) throws EncryptionException, ChecksumException, InvalidMessageException, TimeoutException, EncryptionException, ChecksumException, InvalidMessageException, IOException {
         sendMessage(mDevice);
         sleep(millis);
 
@@ -36,6 +33,6 @@ public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
         return response;
     }
 
-    protected abstract <T> T getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException, TimeoutException;
+    protected abstract <T> T getResponse(byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException, IOException, TimeoutException;
 
 }

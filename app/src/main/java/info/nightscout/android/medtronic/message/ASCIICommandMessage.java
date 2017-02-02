@@ -5,16 +5,16 @@ import info.nightscout.android.medtronic.exception.ChecksumException;
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public class AbstractCommandMessage extends AbstractRequestMessage<CommandResponseMessage> {
-    public AbstractCommandMessage(ASCII command) {
+public class ASCIICommandMessage extends AbstractRequestMessage<CommandResponseMessage> {
+    public ASCIICommandMessage(ASCII command) {
         super(new byte[]{command.getValue()});
     }
 
-    public AbstractCommandMessage(byte command) {
+    public ASCIICommandMessage(byte command) {
         super(new byte[]{command});
     }
 
-    public AbstractCommandMessage(String command) {
+    public ASCIICommandMessage(String command) {
         super(command.getBytes());
     }
 

@@ -11,7 +11,7 @@ import info.nightscout.android.BuildConfig;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 import info.nightscout.android.medtronic.message.MessageUtils;
 import info.nightscout.android.model.medtronicNg.PumpStatusEvent;
 import info.nightscout.android.utils.HexDump;
@@ -49,14 +49,14 @@ public class PumpStatusResponseMessage extends MedtronicSendMessageResponseMessa
     private long rtc;
     private long offset;
 
-    protected PumpStatusResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, UnexpectedMessageException {
+    protected PumpStatusResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException {
         super(pumpSession, payload);
 
         if (this.encode().length < (57 + 96)) {
             // Invalid message. Don't try and parse it
             // TODO - deal with this more elegantly
             Log.e(TAG, "Invalid message received for updatePumpStatus");
-            throw new UnexpectedMessageException("Invalid message received for updatePumpStatus");
+            throw new InvalidMessageException("Invalid message received for updatePumpStatus");
         }
 
         ByteBuffer statusBuffer = ByteBuffer.allocate(96);

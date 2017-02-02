@@ -1,6 +1,5 @@
 package info.nightscout.android.medtronic.message.pump;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
@@ -8,7 +7,6 @@ import java.util.Date;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
 
 /**
  * Created by lgoedhart on 26/03/2016.
@@ -30,10 +28,6 @@ public abstract class ReadHistoryInfoRequestMessage<T> extends MedtronicSendMess
         super(MessageCommand.READ_HISTORY_INFO_REQUEST, pumpSession, buildPayload(historyDataType, from, to));
     }
 
-    @Override
-    protected ReadHistoryInfoResponseMessage getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException {
-        return new ReadHistoryInfoResponseMessage(mPumpSession, payload);
-    }
 
     protected static byte[] buildPayload(HistoryDataType type, Date from, Date to) {
         ByteBuffer payloadBuffer = ByteBuffer.allocate(12);

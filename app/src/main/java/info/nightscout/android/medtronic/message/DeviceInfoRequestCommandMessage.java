@@ -6,7 +6,8 @@ import java.util.concurrent.TimeoutException;
 import info.nightscout.android.USB.UsbHidDriver;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
+
 
 /**
  * Created by volker on 10.12.2016.
@@ -18,7 +19,7 @@ public class DeviceInfoRequestCommandMessage extends AbstractRequestMessage<Devi
     }
 
     @Override
-    public DeviceInfoResponseCommandMessage send(UsbHidDriver mDevice, int millis) throws IOException, TimeoutException, EncryptionException, ChecksumException, UnexpectedMessageException {
+    public DeviceInfoResponseCommandMessage send(UsbHidDriver mDevice, int millis) throws TimeoutException, EncryptionException, ChecksumException, InvalidMessageException, IOException {
         sendMessage(mDevice);
         sleep(millis);
 
@@ -51,7 +52,7 @@ public class DeviceInfoRequestCommandMessage extends AbstractRequestMessage<Devi
     }
 
     @Override
-    protected DeviceInfoResponseCommandMessage getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, UnexpectedMessageException, TimeoutException {
+    protected DeviceInfoResponseCommandMessage getResponse(byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException, IOException, TimeoutException {
         return new DeviceInfoResponseCommandMessage(payload);
     }
 }

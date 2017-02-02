@@ -14,7 +14,7 @@ import java.util.Date;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
-import info.nightscout.android.medtronic.exception.UnexpectedMessageException;
+import info.nightscout.android.medtronic.exception.InvalidMessageException;
 import info.nightscout.android.medtronic.message.MessageUtils;
 
 /**
@@ -26,7 +26,7 @@ public class ReadHistoryResponseMessage extends MedtronicSendMessageResponseMess
     private Date startDate;
     private Date endDate;
 
-    protected ReadHistoryResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, UnexpectedMessageException {
+    protected ReadHistoryResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException {
         super(pumpSession, payload);
 
         long rtc, offset;
@@ -34,7 +34,7 @@ public class ReadHistoryResponseMessage extends MedtronicSendMessageResponseMess
             // Invalid message.
             // TODO - deal with this more elegantly
             Log.e(TAG, "Invalid message received for ReadHistoryInfo");
-            throw new UnexpectedMessageException("Invalid message received for ReadHistoryInfo");
+            throw new InvalidMessageException("Invalid message received for ReadHistoryInfo");
         } else {
 
             ByteBuffer readHistoryInfoBuffer = ByteBuffer.allocate(payload.length);
