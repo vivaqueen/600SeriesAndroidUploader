@@ -3,6 +3,7 @@ package info.nightscout.android.medtronic.message.pump.command.multipacket;
 import info.nightscout.android.medtronic.MedtronicCnlSession;
 import info.nightscout.android.medtronic.exception.ChecksumException;
 import info.nightscout.android.medtronic.exception.EncryptionException;
+import info.nightscout.android.medtronic.message.AbstractResponseMessage;
 import info.nightscout.android.medtronic.message.pump.MedtronicSendMessageRequestMessage;
 
 /**

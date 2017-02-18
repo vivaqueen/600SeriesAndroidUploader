@@ -12,7 +12,7 @@ import info.nightscout.android.medtronic.exception.ChecksumException;
 /**
  * Created by lgoedhart on 26/03/2016.
  */
-public abstract class AbstractBinaryRequestMessage<T> extends AbstractRequestMessage<T> {
+public abstract class AbstractBinaryRequestMessage<T extends AbstractResponseMessage> extends AbstractRequestMessage<T> {
     private final static int ENVELOPE_SIZE = 33;
 
     //protected ByteBuffer mBayerEnvelope;

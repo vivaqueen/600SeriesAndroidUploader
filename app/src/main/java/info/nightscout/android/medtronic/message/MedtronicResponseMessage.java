@@ -3,6 +3,7 @@ package info.nightscout.android.medtronic.message;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -23,6 +24,8 @@ public class MedtronicResponseMessage extends AbstractResponseMessage {
     static int ENVELOPE_SIZE = 22;
     static int ENCRYPTED_ENVELOPE_SIZE = 3;
     static int CRC_SIZE = 2;
+
+    protected MessageCommand comDCommand;
 
     protected MedtronicCnlSession mPumpSession;
 
@@ -55,61 +58,15 @@ public class MedtronicResponseMessage extends AbstractResponseMessage {
                 Log.d(TAG, "DECRYPTED: " + outputString);
             }
 
-            //this.comDCommand = MessageCommand.getMessageCommand((short) (buffer.getShort(0x01) & 0x0000ffff));
+            byte[] encoded = this.encode();
+            int comDCommand = (((encoded[1] & 0xff) << 8)  | (encoded[2] & 0xff))  & 0x0000ffff;
+
+            this.comDCommand = MessageCommand.getMessageCommand((short) comDCommand);
         }
     }
 
-    public enum ReceiveMessageType {
-        NO_TYPE(0x0),
-        TIME_RESPONSE(0x407);
-
-        private short value;
-
-        ReceiveMessageType(int messageType) {
-            value = (short) messageType;
-        }
-    }
-
-    /**
-     * MedtronicResponseMessage:
-     * +------------------+-----------------+-----------------+---------------------------------+-------------------+--------------------------------+
-     * | LE short unknown | LE long pumpMAC | LE long linkMAC | byte[3] responseSequenceNumber? | byte Payload size | byte[] Encrypted Payload bytes |
-     * +------------------+-----------------+-----------------+---------------------------------+-------------------+--------------------------------+
-     * <p/>
-     * MedtronicResponseMessage (decrypted payload):
-     * +----------------------------+-----------------------------+----------------------+--------------------+
-     * | byte receiveSequenceNumber | BE short receiveMessageType | byte[] Payload bytes | BE short CCITT CRC |
-     * +----------------------------+-----------------------------+----------------------+--------------------+
-     */
-    public static AbstractBaseMessage fromBytes(MedtronicCnlSession pumpSession, byte[] bytes) throws ChecksumException, EncryptionException {
-        // TODO - turn this into a factory
-
-        return new MedtronicResponseMessage(pumpSession, bytes);
-        /*
-        AbstractBaseMessage message = MedtronicMessage.fromBytes(bytes);
-
-
-        // TODO - Validate the message, inner CCITT, serial numbers, etc
-
-        // If there's not 57 bytes, then we got back a bad message. Not sure how to process these yet.
-        // Also, READ_INFO and REQUEST_LINK_KEY are not encrypted
-        if (bytes.length >= 57 &&
-                (bytes[18] != CommandType.READ_INFO.getValue()) &&
-                (bytes[18] != CommandType.REQUEST_LINK_KEY_RESPONSE.getValue())) {
-            // Replace the encrypted bytes by their decrypted equivalent (same block size)
-            byte encryptedPayloadSize = bytes[56];
-
-            ByteBuffer encryptedPayload = ByteBuffer.allocate(encryptedPayloadSize);
-            encryptedPayload.put(bytes, 57, encryptedPayloadSize);
-            byte[] decryptedPayload = decrypt(pumpSession.getKey(), pumpSession.getIV(), encryptedPayload.array());
-
-            // Now that we have the decrypted payload, rewind the mPayload, and overwrite the bytes
-            // TODO - because this messes up the existing CCITT, do we want to have a separate buffer for the decrypted payload?
-            // Should be fine provided we check the CCITT first...
-            message.mPayload.position(57);
-            message.mPayload.put(decryptedPayload);
-        }
-        return message;*/
+    public MessageCommand getComDCommand() {
+        return comDCommand;
     }
 
     protected static byte[] decrypt(byte[] key, byte[] iv, byte[] encrypted) throws EncryptionException {

@@ -13,7 +13,7 @@ import info.nightscout.android.medtronic.exception.InvalidMessageException;
  */
 
 public class ReadPumpHistoryInfoRequestMessage extends ReadHistoryInfoRequestMessage<ReadHistoryInfoResponseMessage> {
-    protected ReadPumpHistoryInfoRequestMessage(MedtronicCnlSession pumpSession, Date from, Date to) throws EncryptionException, ChecksumException {
+    public ReadPumpHistoryInfoRequestMessage(MedtronicCnlSession pumpSession, Date from, Date to) throws EncryptionException, ChecksumException {
         super(pumpSession, HistoryDataType.PUMP_DATA, from, to);
     }
 

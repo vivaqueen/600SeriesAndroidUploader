@@ -12,7 +12,7 @@ import info.nightscout.android.medtronic.exception.InvalidMessageException;
  * Created by volker on 12.12.2016.
  */
 
-public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
+public abstract class AbstractRequestMessage<T extends AbstractResponseMessage> extends AbstractBaseMessage {
     private static final String TAG = AbstractRequestMessage.class.getSimpleName();
 
     protected AbstractRequestMessage(byte[] bytes) {
@@ -23,7 +23,7 @@ public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
         return send(mDevice, 0);
     }
 
-    public T send(UsbHidDriver mDevice, int millis) throws EncryptionException, ChecksumException, InvalidMessageException, TimeoutException, EncryptionException, ChecksumException, InvalidMessageException, IOException {
+    public T send(UsbHidDriver mDevice, int millis) throws TimeoutException, EncryptionException, ChecksumException, InvalidMessageException, IOException {
         sendMessage(mDevice);
         sleep(millis);
 
@@ -33,6 +33,6 @@ public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
         return response;
     }
 
-    protected abstract <T> T getResponse(byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException, IOException, TimeoutException;
+    protected abstract T getResponse(byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException, IOException, TimeoutException;
 
 }

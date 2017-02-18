@@ -17,29 +17,24 @@ import info.nightscout.android.medtronic.message.pump.MedtronicSendMessageRespon
 public class MultiPacketSegmentResponseMessage extends MedtronicSendMessageResponseMessage {
     private static final String TAG = MultiPacketSegmentResponseMessage.class.getSimpleName();
     private final int packetNumber;
-
-    private MessageCommand comDCommand;
+    private byte[] segmentPayload;
 
     public MultiPacketSegmentResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, InvalidMessageException {
         super(pumpSession, payload);
 
-        byte[] encoded = this.encode();
-        ByteBuffer buffer = ByteBuffer.allocate(encoded.length - 7);
+        segmentPayload = this.encode();
+        ByteBuffer buffer = ByteBuffer.allocate(segmentPayload.length - 7);
         buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.put(encoded, 0x05, encoded.length - 7);
+        buffer.put(segmentPayload, 0x05, segmentPayload.length - 7);
 
         this.packetNumber = buffer.getShort(0x03) & 0x0000ffff;
-
-        // pick segment payload
-        setPayload(encoded);
-        comDCommand = null;
     }
 
     public int getPacketNumber() {
         return packetNumber;
     }
 
-    public MessageCommand getComDCommand() {
-        return comDCommand;
+    public byte[] getSegmentPayload() {
+        return segmentPayload;
     }
 }

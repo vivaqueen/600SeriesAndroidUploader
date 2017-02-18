@@ -14,7 +14,7 @@ import info.nightscout.android.medtronic.message.MessageUtils;
  * Created by volker on 18.12.2016.
  */
 
-public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRequestMessage<T> {
+public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRequestMessage {
     static int ENVELOPE_SIZE = 11;
     static int ENCRYPTED_ENVELOPE_SIZE = 3;
     static int CRC_SIZE = 2;
@@ -22,11 +22,6 @@ public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRe
 
     protected MedtronicSendMessageRequestMessage(MessageCommand sendMessageType, MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException {
         super(CommandType.SEND_MESSAGE, CommandAction.PUMP_REQUEST, pumpSession, buildPayload(sendMessageType, pumpSession, payload));
-    }
-
-    @Override
-    protected T getResponse(byte[] payload) throws ChecksumException, EncryptionException, IOException, InvalidMessageException, EncryptionException, ChecksumException, InvalidMessageException {
-        return null;
     }
 
     /**
