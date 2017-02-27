@@ -5,6 +5,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.TimeoutException;
 
@@ -126,6 +127,17 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
         return count;
     }
 
+    protected int[] missingSegmentKeys() {
+        ArrayList<Integer> keys = new ArrayList<>(this.segments.length);
+        int count = 0;
+        for ( byte[] segment: this.segments){
+            if (segment==null) {
+                keys.add(count);
+            };
+            count ++;
+        }
+        return keys.toArray();
+    }
     /*
     get missingSegmentKeys() {
         return this.segments.filter(value => value === undefined).keys();

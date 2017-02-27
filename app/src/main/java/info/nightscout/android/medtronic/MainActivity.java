@@ -738,8 +738,6 @@ public class MainActivity extends AppCompatActivity implements OnSharedPreferenc
             PumpInfo pump = getActivePump();
 
             if (pump != null && pump.isValid()) {
-                Log.d(TAG, "history display refresh size: " + pump.getPumpHistory().size());
-                Log.d(TAG, "history display refresh date: " + pump.getPumpHistory().last().getEventDate());
                 pumpStatusData = pump.getPumpHistory().last();
             }
 

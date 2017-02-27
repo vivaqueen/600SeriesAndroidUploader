@@ -14,7 +14,7 @@ import info.nightscout.android.medtronic.message.MessageUtils;
  * Created by volker on 18.12.2016.
  */
 
-public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRequestMessage {
+public abstract class MedtronicSendMessageRequestMessage<T>  extends MedtronicRequestMessage<T> {
     static int ENVELOPE_SIZE = 11;
     static int ENCRYPTED_ENVELOPE_SIZE = 3;
     static int CRC_SIZE = 2;

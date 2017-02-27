@@ -12,7 +12,7 @@ import info.nightscout.android.medtronic.exception.InvalidMessageException;
  * Created by volker on 12.12.2016.
  */
 
-public abstract class AbstractRequestMessage<T extends AbstractResponseMessage> extends AbstractBaseMessage {
+public abstract class AbstractRequestMessage<T> extends AbstractBaseMessage {
     private static final String TAG = AbstractRequestMessage.class.getSimpleName();
 
     protected AbstractRequestMessage(byte[] bytes) {
