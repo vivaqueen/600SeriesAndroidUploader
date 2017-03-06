@@ -165,9 +165,6 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
         Log.d(TAG, "*** GOT A MULTIPACKET SEGMENT "+ packetNumber + ", count:" + this.segmentCount());
         Log.d(TAG, "*** PAYLOAD:" + HexDump.dumpHexString(segmentPayload));
 
-        // multiByteSegments don't always come back in a consecutive order.
-        this.segments[packetNumber] = segmentPayload;
-
         if (packetNumber == this.lastPacketNumber() &&
                 segmentPayload.length != this.lastPacketSize) {
             throw new InvalidMessageException("Multipacket Transfer last packet size mismatch");
@@ -183,9 +180,16 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
                 throw new InvalidMessageException("Total segment size mismatch");
             }
 
+            ByteBuffer buffer = ByteBuffer.allocate(segmentPayload.length);
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            buffer.put(segmentPayload);
+
+            // multiByteSegments don't always come back in a consecutive order.
+            this.segments[packetNumber] = buffer.array();
+
             // TODO - all of this should go into different classes...
             // Decompress the message
-            if (segmentPayload.readUInt16BE(0x00) === 0x030E) {
+            if ((buffer.getInt(0x00) & 0xffffffffl) == 0x030E) {
                 const HEADER_SIZE = 12; // TODO should be a static get.
                 // It's an UnmergedHistoryUpdateCompressed response. We need to decompress it
                 const dataType = segmentPayload[0x02]; // Returns a HISTORY_DATA_TYPE
@@ -244,8 +248,6 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
                     AckMultipacketCommand.SEGMENT_COMMAND.SEND_NEXT_SEGMENT)
                     .send(hidDevice)
                     .then(() => resolve());
-        } else {
-            resolve();
         }
     }
 
