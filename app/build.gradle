@@ -161,4 +161,7 @@ dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
     compile 'com.google.android.gms:play-services-appindexing:8.4.0'
+
+    // https://mvnrepository.com/artifact/org.anarres.lzo/lzo-core
+    compile group: 'org.anarres.lzo', name: 'lzo-core', version: '1.0.5'
 }

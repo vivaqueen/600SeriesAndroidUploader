@@ -2,6 +2,12 @@ package info.nightscout.android.medtronic.message.pump;
 
 import android.util.Log;
 
+import org.anarres.lzo.LzoAlgorithm;
+import org.anarres.lzo.LzoDecompressor;
+import org.anarres.lzo.LzoInputStream;
+import org.anarres.lzo.LzoLibrary;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -23,18 +29,21 @@ import info.nightscout.android.medtronic.message.pump.command.multipacket.Repeat
 import info.nightscout.android.utils.HexDump;
 
 import static android.R.attr.value;
+import static android.R.id.message;
 
 /**
  * Created by lgoedhart on 26/03/2016.
  */
 public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMessage> extends MedtronicSendMessageRequestMessage<T> {
     private static final String TAG = ReadHistoryBaseRequestMessage.class.getSimpleName();
+    private final LzoDecompressor lzoODecompressor;
 
     private long segmentSize;
     private short packetSize;
     private short lastPacketSize;
     private short packetsToFetch;
     private byte[][] segments;
+    private byte historyDataType;
 
     protected enum HistoryDataType {
         PUMP_DATA(0x2),
@@ -58,6 +67,8 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
         this.expectedSize = expectedSize;
         this.bytesFetched = 0;
         this.receviedEndHistoryCommand = false;
+
+        lzoODecompressor = LzoLibrary.getInstance().newDecompressor(LzoAlgorithm.LZO1X, null);
     }
 
     @Override
@@ -128,15 +139,18 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
     }
 
     protected int[] missingSegmentKeys() {
-        ArrayList<Integer> keys = new ArrayList<>(this.segments.length);
+        int[] keys = new int[this.segments.length];
         int count = 0;
-        for ( byte[] segment: this.segments){
+        for ( int i = 0; i < this.segments.length; i++) {
+            byte[] segment = this.segments[i];
             if (segment==null) {
-                keys.add(count);
+                keys[count++] = i;
             };
-            count ++;
         }
-        return keys.toArray();
+
+        int[] result = new int[count];
+        System.arraycopy(keys, 0, result, 0, count);
+        return result;
     }
     /*
     get missingSegmentKeys() {
@@ -190,28 +204,36 @@ public abstract class ReadHistoryBaseRequestMessage<T extends AbstractResponseMe
             // TODO - all of this should go into different classes...
             // Decompress the message
             if ((buffer.getInt(0x00) & 0xffffffffl) == 0x030E) {
-                const HEADER_SIZE = 12; // TODO should be a static get.
+                final byte HEADER_SIZE = 12; // TODO should be a static get.
                 // It's an UnmergedHistoryUpdateCompressed response. We need to decompress it
-                const dataType = segmentPayload[0x02]; // Returns a HISTORY_DATA_TYPE
-                const historySizeCompressed = segmentPayload.readUInt32BE(0x03);
-                const historySizeUncompressed = segmentPayload.readUInt32BE(0x07);
-                const historyCompressed = segmentPayload[0x0B];
+                final byte dataType = buffer.get(0x02); // Returns a HISTORY_DATA_TYPE
+                final long  historySizeCompressed = (buffer.getInt(0x03) & 0xffffffffl); //segmentPayload.readUInt32BE(0x03);
+                final long historySizeUncompressed = (buffer.getInt(0x03) & 0xffffffffl); //segmentPayload.readUInt32BE(0x07);
+                final boolean historyCompressed = (buffer.get(0x0B) != 0);
 
-                if (dataType !== this.historyDataType) {
-                    reject(new InvalidMessageError('Unexpected history type in response'));
+                if (dataType != this.historyDataType) {
+                    throw new InvalidMessageException("Unexpected history type in response");
                 }
 
                 // Check that we have the correct number of bytes in this message
-                if (segmentPayload.length - HEADER_SIZE !== historySizeCompressed) {
-                    reject(new InvalidMessageError('Unexpected message size'));
+                if (segmentPayload.length - HEADER_SIZE != historySizeCompressed) {
+                    throw new InvalidMessageException("Unexpected message size");
                 }
 
-                let blockPayload = null;
+                byte[] blockPayload;
                 if (historyCompressed) {
-                    blockPayload = lzo.decompress(segmentPayload.slice(HEADER_SIZE));
-                    if (blockPayload.length !== historySizeUncompressed) {
-                        debug(`Unexpected uncompressed message size. Expected ${historySizeUncompressed}, got ${blockPayload.length}. Original size ${historySizeCompressed}, compressed: ${historyCompressed}.`);
-                        reject(new InvalidMessageError('Unexpected uncompressed message size.'));
+                    byte[] lzoSegemnt;
+                    System.arraycopy(segmentPayload, HEADER_SIZE, lzoSegemnt, 0, segmentPayload.length -HEADER_SIZE);
+                    LzoInputStream stream = new LzoInputStream(
+                            new ByteArrayInputStream(lzoSegemnt), lzoODecompressor);
+
+                    blockPayload = new byte[stream.available()];
+
+                    int size = stream.read(blockPayload);
+
+                    if (size != historySizeUncompressed) {
+                        Log.d(TAG, "Unexpected uncompressed message size. Expected ${historySizeUncompressed}, got ${blockPayload.length}. Original size ${historySizeCompressed}, compressed: ${historyCompressed}.");
+                        throw (new InvalidMessageException("Unexpected uncompressed message size."));
                     }
                 } else {
                     blockPayload = segmentPayload.slice(HEADER_SIZE);
