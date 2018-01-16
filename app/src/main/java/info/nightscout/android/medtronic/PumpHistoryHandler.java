@@ -22,6 +22,7 @@ import info.nightscout.android.model.medtronicNg.PumpHistoryBG;
 import info.nightscout.android.model.medtronicNg.PumpHistoryBasal;
 import info.nightscout.android.model.medtronicNg.PumpHistoryBolus;
 import info.nightscout.android.model.medtronicNg.PumpHistoryCGM;
+import info.nightscout.android.model.medtronicNg.PumpHistoryDebug;
 import info.nightscout.android.model.medtronicNg.PumpHistoryInterface;
 import info.nightscout.android.model.medtronicNg.PumpHistoryMisc;
 import info.nightscout.android.model.medtronicNg.PumpHistoryProfile;
@@ -78,6 +79,7 @@ public class PumpHistoryHandler {
         historyDB.add(new DBitem("BG", 20, historyRealm.where(PumpHistoryBG.class).findAll()));
         historyDB.add(new DBitem("PROFILE", 20, historyRealm.where(PumpHistoryProfile.class).findAll()));
         historyDB.add(new DBitem("MISC", 20, historyRealm.where(PumpHistoryMisc.class).findAll()));
+        historyDB.add(new DBitem("DEBUG", 20, historyRealm.where(PumpHistoryDebug.class).findAll()));
     }
 
     private class DBitem {
@@ -174,6 +176,23 @@ public class PumpHistoryHandler {
                 }
             }
         });
+    }
+
+    public void debugNote(final Date eventDate, final String note) {
+        historyRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                PumpHistoryDebug.note(historyRealm, eventDate, note);
+            }
+        });
+    }
+
+    public Date debugNoteLastDate() {
+        RealmResults<PumpHistoryDebug> results = historyRealm
+                .where(PumpHistoryDebug.class)
+                .findAllSorted("eventDate", Sort.DESCENDING);
+        if (results.size() > 0) return results.first().getEventDate();
+        return null;
     }
 
     public void profile(final MedtronicCnlReader cnlReader) throws EncryptionException, IOException, ChecksumException, TimeoutException, UnexpectedMessageException {
@@ -446,74 +465,61 @@ public class PumpHistoryHandler {
                 userLogMessage(historyTAG + "received \n      " + (range[0] == null ? "null" : dateFormatter.format(range[0])) + " - " + (range[1] == null ? "null" : dateFormatter.format(range[1])));
 
             final Date pulledFrom = range[0];
-            //final Date pulledTo = range[1];
-/*
-            // update segment toDate as there may be more or less available then we requested
-            if (pulledTo.getTime() > segment.get(0).getToDate().getTime()) {
-                // update segment toDate
+
+            if (pulledFrom.getTime() > segment.get(1).getToDate().getTime()) {
+                // update the segment fromDate, we still need more history for this segment
                 historyRealm.executeTransaction(new Realm.Transaction() {
                     @Override
                     public void execute(Realm realm) {
-                        segment.get(0).setToDate(pulledTo);
+                        segment.get(0).setFromDate(pulledFrom);
                     }
                 });
-            }
-*/
-            if(pulledFrom != null) {
-                if (pulledFrom.getTime() > segment.get(1).getToDate().getTime()) {
-                    // update the segment fromDate, we still need more history for this segment
+            } else {
+                // segments now overlap, combine to single segment
+                historyRealm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        segment.get(1).setToDate(segment.get(0).getToDate());
+                        segment.deleteFromRealm(0);
+                    }
+                });
+                // check if any remaining segments need combining or deleting
+                boolean checkNext = true;
+                while (checkNext && segment.size() > 1) {
+                    // delete next segment if not needed as we have the events from recent pull
+                    if (segment.get(1).getFromDate().getTime() > pulledFrom.getTime()) {
+                        historyRealm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                segment.deleteFromRealm(1);
+                            }
+                        });
+                    }
+                    // combine segments if needed
+                    else {
+                        checkNext = false;
+                        if (segment.get(1).getToDate().getTime() > pulledFrom.getTime()) {
+                            historyRealm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    segment.get(1).setToDate(segment.get(0).getToDate());
+                                    segment.deleteFromRealm(0);
+                                }
+                            });
+                        }
+                    }
+                }
+                // finally update segment fromDate if needed
+                if (segment.get(0).getFromDate().getTime() > pulledFrom.getTime()) {
                     historyRealm.executeTransaction(new Realm.Transaction() {
                         @Override
                         public void execute(Realm realm) {
                             segment.get(0).setFromDate(pulledFrom);
                         }
                     });
-                } else {
-                    // segments now overlap, combine to single segment
-                    historyRealm.executeTransaction(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                            segment.get(1).setToDate(segment.get(0).getToDate());
-                            segment.deleteFromRealm(0);
-                        }
-                    });
-                    // check if any remaining segments need combining or deleting
-                    boolean checkNext = true;
-                    while (checkNext && segment.size() > 1) {
-                        // delete next segment if not needed as we have the events from recent pull
-                        if (segment.get(1).getFromDate().getTime() > pulledFrom.getTime()) {
-                            historyRealm.executeTransaction(new Realm.Transaction() {
-                                @Override
-                                public void execute(Realm realm) {
-                                    segment.deleteFromRealm(1);
-                                }
-                            });
-                        }
-                        // combine segments if needed
-                        else {
-                            checkNext = false;
-                            if (segment.get(1).getToDate().getTime() > pulledFrom.getTime()) {
-                                historyRealm.executeTransaction(new Realm.Transaction() {
-                                    @Override
-                                    public void execute(Realm realm) {
-                                        segment.get(1).setToDate(segment.get(0).getToDate());
-                                        segment.deleteFromRealm(0);
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    // finally update segment fromDate if needed
-                    if (segment.get(0).getFromDate().getTime() > pulledFrom.getTime()) {
-                        historyRealm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                segment.get(0).setFromDate(pulledFrom);
-                            }
-                        });
-                    }
                 }
             }
+
         }
 
         for (int i = 0; i < segment.size(); i++) {

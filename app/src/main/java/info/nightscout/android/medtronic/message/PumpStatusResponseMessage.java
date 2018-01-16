@@ -77,6 +77,8 @@ public class PumpStatusResponseMessage extends MedtronicSendMessageResponseMessa
     private short calibrationDueMinutes;
     private float sensorRateOfChange;
 
+    private byte[] payload; // save the payload for data mining on the 670G
+
     protected PumpStatusResponseMessage(MedtronicCnlSession pumpSession, byte[] payload) throws EncryptionException, ChecksumException, UnexpectedMessageException {
         super(pumpSession, payload);
 
@@ -84,6 +86,8 @@ public class PumpStatusResponseMessage extends MedtronicSendMessageResponseMessa
             Log.e(TAG, "Invalid message received for PumpTime");
             throw new UnexpectedMessageException("Invalid message received for PumpStatus");
         }
+
+        this.payload = payload; // save the payload for data mining on the 670G
 
         // add Flags
         pumpStatus = payload[0x03];
@@ -193,14 +197,9 @@ public class PumpStatusResponseMessage extends MedtronicSendMessageResponseMessa
 
         // Transmitter
         transmitterControl = payload[0x43];
-        transmitterBattery  = payload[0x45];
+        transmitterBattery = payload[0x45];
         // Normalise transmitter battery to percentage shown on pump sensor status screen
-        if (transmitterBattery == 0x3F) transmitterBattery = 100;
-        else if (transmitterBattery == 0x2B) transmitterBattery = 73;
-        else if (transmitterBattery == 0x27) transmitterBattery = 47;
-        else if (transmitterBattery == 0x23) transmitterBattery = 20;
-        else if (transmitterBattery == 0x10) transmitterBattery = 0;
-        else transmitterBattery = 0;
+        transmitterBattery = (byte) (((transmitterBattery & 0x0F) * 100) / 15);
 
         // Sensor
         long rawSensorRateOfChange = read16BEtoULong(payload, 0x46);
@@ -213,6 +212,8 @@ public class PumpStatusResponseMessage extends MedtronicSendMessageResponseMessa
      * @param pumpRecord
      */
     public void updatePumpRecord(PumpStatusEvent pumpRecord) {
+
+        pumpRecord.setPayload(payload);  // save the payload for data mining on the 670G
 
         // add Flags
         pumpRecord.setPumpStatus(pumpStatus);
